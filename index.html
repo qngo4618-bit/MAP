@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071a2d">
+<title>VNA Flight Briefing | Vietnam Airlines</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#071a2d;--navy2:#0b2945;--gold:#c9a65e;--gold2:#ead6a5;--ink:#f5f7fa;--muted:#a9bacb;--line:rgba(220,232,243,.14);--glass:rgba(5,23,41,.91);--green:#68d3a1;--blue:#67b5e5}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#061629;color:var(--ink);font-family:'DM Sans',sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
+#app{position:relative;width:100%;height:100%;isolation:isolate}#globeViz{position:absolute;inset:0;z-index:0}#globeViz canvas{outline:none}
+.shade{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,rgba(2,12,23,.7),transparent 20%,transparent 64%,rgba(2,12,23,.52))}
+.topbar{position:absolute;z-index:5;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 22px;background:linear-gradient(180deg,rgba(2,13,25,.76),transparent)}
+.brand{display:flex;align-items:center;gap:11px}.logo{width:39px;height:39px;border:1px solid rgba(201,166,94,.75);border-radius:50%;display:grid;place-items:center;color:var(--gold2);font-size:21px}.brand b{display:block;font-size:10px;letter-spacing:.2em;color:var(--gold2)}.brand small{display:block;margin-top:4px;font-size:9px;letter-spacing:.17em;color:#d4e0eb}
+.flight-chip{display:flex;align-items:center;gap:10px;padding:9px 14px;border:1px solid var(--line);border-radius:30px;background:rgba(5,24,43,.76);backdrop-filter:blur(15px);font-size:11px}.flight-chip strong{color:var(--gold2);letter-spacing:.1em}.flight-chip span{color:#c2d0dd}.chip-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+.top-actions{display:flex;gap:7px}.icon-btn{border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:rgba(5,24,43,.76);color:#e4edf5;font-size:12px}.icon-btn:hover{border-color:var(--gold);color:var(--gold2)}
+.map-tools{position:absolute;z-index:4;left:18px;top:45%;display:grid;gap:7px}.map-tools button{width:38px;height:38px;border:1px solid var(--line);border-radius:12px;background:rgba(5,24,43,.82);color:#e9eff5;font-size:17px;backdrop-filter:blur(12px)}
+.map-tools button:hover{border-color:var(--gold);color:var(--gold2)}
+.map-hint{position:absolute;z-index:3;left:50%;top:82px;transform:translateX(-50%);padding:7px 12px;border:1px solid var(--line);border-radius:20px;background:rgba(5,23,41,.65);color:#b7c8d8;font-size:10px;white-space:nowrap;pointer-events:none}
+.flight-summary{position:absolute;z-index:4;left:68px;top:105px;width:240px;padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:rgba(5,23,41,.78);backdrop-filter:blur(15px);box-shadow:0 12px 36px #0003}
+.kicker{font-size:9px;letter-spacing:.17em;color:var(--gold2);font-weight:700}.summary-route{display:flex;align-items:center;justify-content:space-between;margin:8px 0}.summary-route b{font:600 25px 'Playfair Display',serif}.summary-route span{color:var(--gold);font-size:19px}.summary-meta{display:flex;justify-content:space-between;gap:6px;color:#b8c8d8;font-size:10px}.summary-meta strong{color:#f0f4f8}.route-photos{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}.route-photo{position:relative;height:54px;border-radius:8px;overflow:hidden;border:1px solid rgba(232,201,121,.45)}.route-photo img{width:100%;height:100%;object-fit:cover;opacity:.8}.route-photo b{position:absolute;left:6px;bottom:5px;font-size:10px;text-shadow:0 1px 5px #000}
+.bottom-dock{position:absolute;z-index:7;left:50%;bottom:17px;transform:translateX(-50%);display:flex;gap:5px;padding:6px;border:1px solid var(--line);border-radius:17px;background:rgba(4,19,35,.94);backdrop-filter:blur(18px);box-shadow:0 12px 40px #0006}
+.tab{display:flex;align-items:center;gap:8px;padding:11px 15px;border:0;border-radius:12px;background:transparent;color:#b9c8d6;font-size:11px;white-space:nowrap}.tab .ico{font-size:16px}.tab.active{background:rgba(201,166,94,.17);color:var(--gold2);box-shadow:inset 0 0 0 1px rgba(201,166,94,.25)}
+.drawer{position:absolute;z-index:6;right:18px;top:84px;bottom:86px;width:370px;max-height:calc(100% - 170px);display:flex;flex-direction:column;border:1px solid var(--line);border-radius:20px;background:var(--glass);backdrop-filter:blur(22px);box-shadow:0 20px 70px #0007;overflow:hidden;transition:transform .25s,opacity .25s}
+.drawer.hidden{opacity:0;pointer-events:none;transform:translateX(18px)}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}.drawer-head h2{margin:0;font:600 20px 'Playfair Display',serif}.drawer-head small{display:block;color:var(--gold2);font-size:9px;letter-spacing:.16em;margin-bottom:4px}.close{border:1px solid var(--line);border-radius:9px;background:transparent;color:#dce5ed;padding:7px 10px}
+.drawer-content{padding:15px 17px 22px;overflow:auto;overscroll-behavior:contain;flex:1}.muted{color:var(--muted)}.subheading{font-size:10px;letter-spacing:.14em;color:var(--gold2);font-weight:700;margin:17px 0 9px}
+.flight-card,.airport-card,.doc-card,.check-card,.city-card{padding:12px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.035);margin-bottom:9px}
+.flight-card{cursor:pointer}.flight-card.selected{border-color:rgba(201,166,94,.72);background:rgba(201,166,94,.10)}.flight-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.flight-no{font-weight:700;color:var(--gold2);font-size:12px;letter-spacing:.08em}.flight-date{font-size:10px;color:#aebfce}.flight-route{display:flex;align-items:center;gap:11px;margin:9px 0}.flight-route b{font:600 22px 'Playfair Display',serif}.flight-route span{font-size:10px;color:#9eb0c1}.flight-foot{display:flex;justify-content:space-between;color:#b5c5d3;font-size:10px}.status{font-size:9px;padding:4px 7px;border-radius:20px;background:rgba(104,211,161,.12);color:var(--green)}
+.month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}.month-nav strong{font:600 17px 'Playfair Display',serif}.month-nav button{background:transparent;color:var(--gold2);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.weekday{text-align:center;font-size:9px;color:#879bad;padding:4px 0}.day{position:relative;min-height:37px;border:1px solid transparent;border-radius:9px;background:rgba(255,255,255,.035);color:#d9e2ea;font-size:10px}.day.dim{opacity:.32}.day.today{border-color:var(--gold)}.day.has-flight:after{content:'';position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--green)}.day.selected{background:rgba(201,166,94,.2);border-color:var(--gold2);color:#fff}
+.field{display:grid;gap:5px;margin:9px 0}.field label{font-size:9px;color:#aebfce;letter-spacing:.1em}.field input,.field select,.field textarea,.search{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 11px;background:rgba(255,255,255,.055);color:#f2f5f8;outline:none;font-size:11px}.field option{background:#0b2945}.field textarea{min-height:70px;resize:vertical}
+.btn{border:0;border-radius:9px;padding:10px 13px;background:linear-gradient(100deg,#b48d45,#e4c77e);color:#10243a;font-weight:700;font-size:10px;letter-spacing:.06em}.btn.secondary{background:rgba(255,255,255,.07);border:1px solid var(--line);color:#e1eaf2}.btn-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.route-pair{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}.route-pair .airport-card{margin:0}.route-pair b{font:600 21px 'Playfair Display',serif;color:var(--gold2)}.airport-card h3{margin:0 0 4px;font-size:13px}.airport-card p{font-size:10px;line-height:1.55;color:#b6c6d5;margin:7px 0}.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.metric{padding:10px;border-radius:10px;background:rgba(255,255,255,.045)}.metric small{display:block;color:#91a5b8;font-size:8px;letter-spacing:.1em}.metric b{display:block;margin-top:5px;font-size:11px;color:#f0f4f8}
+.city-tag{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;margin:3px;border:1px solid rgba(201,166,94,.5);border-radius:18px;color:var(--gold2);background:rgba(5,23,41,.88);font-size:9px;cursor:pointer}.city-tag:hover{background:rgba(201,166,94,.18)}.city-tag:focus-visible,.map-sticker:focus-visible{outline:2px solid #ffe08a;outline-offset:3px}
+.doc-card{display:flex;align-items:center;gap:10px}.doc-icon{width:35px;height:38px;display:grid;place-items:center;border-radius:8px;background:rgba(201,166,94,.14);color:var(--gold2);font-size:17px;flex:none}.doc-main{min-width:0;flex:1}.doc-main b{display:block;font-size:11px;overflow-wrap:anywhere}.doc-main small{display:block;color:#91a5b8;font-size:9px;margin-top:4px}.doc-actions{display:flex;gap:5px}.doc-actions button{border:1px solid var(--line);border-radius:7px;background:transparent;color:#d9e4ed;padding:6px 7px;font-size:10px}
+.check-card{display:flex;align-items:flex-start;gap:9px}.check-card input{accent-color:var(--gold);margin-top:2px}.check-card b{font-size:11px}.check-card small{display:block;color:#9fb1c2;font-size:9px;margin-top:4px;line-height:1.4}
+.progress{height:5px;background:rgba(255,255,255,.1);border-radius:9px;overflow:hidden;margin:9px 0}.progress span{display:block;height:100%;width:0;background:var(--gold);transition:width .2s}
+.empty{padding:18px;text-align:center;color:#9eb0c1;font-size:11px;border:1px dashed var(--line);border-radius:12px;line-height:1.6}
+.toast{position:absolute;z-index:12;left:50%;top:85px;transform:translate(-50%,-8px);opacity:0;pointer-events:none;padding:9px 14px;border:1px solid rgba(201,166,94,.4);border-radius:10px;background:rgba(5,22,40,.96);color:var(--gold2);font-size:11px;transition:.2s}.toast.show{opacity:1;transform:translate(-50%,0)}
+.sim-progress{height:6px;border-radius:10px;background:#ffffff18;overflow:hidden;margin:12px 0}.sim-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#b48d45,#f5dfad);transition:width .08s linear}.sim-hero{position:relative;height:145px;border-radius:13px;overflow:hidden;margin-bottom:10px;background:#102a40}.sim-hero img{width:100%;height:100%;object-fit:cover;opacity:.82}.sim-hero:after{content:"";position:absolute;inset:35% 0 0;background:linear-gradient(transparent,#071a2d)}.sim-hero div{position:absolute;z-index:1;left:13px;bottom:12px;font:600 23px 'Playfair Display',serif;color:white;text-shadow:0 2px 12px #000}.sim-endpoints{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sim-endpoint{position:relative;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#102a40;min-width:0}.sim-endpoint img{width:100%;height:75px;object-fit:cover;display:block}.sim-endpoint div{padding:8px}.sim-endpoint b{font-size:12px;color:var(--gold2)}.sim-endpoint small{display:block;color:#b6c6d5;font-size:9px;margin-top:3px}.map-sticker{pointer-events:auto!important;touch-action:manipulation;position:relative;z-index:8;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 7px;border:1px solid rgba(234,214,165,.82);border-radius:13px;background:linear-gradient(145deg,rgba(10,38,61,.98),rgba(3,16,30,.96));color:#f5dfad;font:700 9px 'DM Sans',sans-serif;white-space:nowrap;box-shadow:0 5px 20px #0009;cursor:pointer;transform:translateY(-3px);transition:transform .2s,filter .2s}.map-sticker:hover{transform:translateY(-7px) scale(1.12);filter:brightness(1.25)}.map-sticker .landmark{font-size:25px;line-height:1.05;filter:drop-shadow(0 2px 5px #0009)}.map-sticker .airport-code{font-size:8px;letter-spacing:.08em;color:#f7dfa7}.map-sticker.endpoint{border:1.5px solid #f4d17d;box-shadow:0 0 0 3px #f4d17d35,0 0 22px #e6bf65aa;transform:translateY(-5px) scale(1.16)}.map-sticker.endpoint .landmark{font-size:30px}.map-sticker.selected{border:2px solid #fff0b8;box-shadow:0 0 0 5px #f4d17d45,0 0 32px #ffe08a;filter:brightness(1.35);transform:translateY(-8px) scale(1.22);z-index:12}.map-sticker.selected:after{content:'ĐANG XEM';position:absolute;top:-19px;left:50%;transform:translateX(-50%);padding:3px 6px;border-radius:8px;background:#f1d58f;color:#09233b;font:700 7px 'DM Sans',sans-serif;letter-spacing:.08em;white-space:nowrap}.map-sticker.nearby{animation:landmarkPop .55s ease both;border-color:#f4d17d;box-shadow:0 0 22px #e6bf65bb}.plane-vna{width:58px;height:58px;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle,#fff 0%,#f7e9c5 42%,#d2a94f 72%,#7e5a20 100%);border:2px solid #fff3c8;box-shadow:0 0 0 4px #d4ae5b40,0 0 26px #e8c76c;will-change:transform;backface-visibility:hidden}.plane-vna svg{width:48px;height:48px;filter:drop-shadow(0 2px 2px #15324b)}.plane-overlay{position:absolute;left:0;top:0;z-index:3;pointer-events:none;transform:translate3d(-1000px,-1000px,0);will-change:transform}.map-sticker.nearby{border-color:#ffe08a;box-shadow:0 0 0 3px #e6bf6540,0 0 24px #e6bf65;filter:brightness(1.2)}@keyframes landmarkPop{0%{transform:scale(.5);opacity:.2}70%{transform:scale(1.22)}100%{transform:scale(1);opacity:1}}
+@media(max-width:760px){
+ .topbar{padding:10px 12px}.logo{width:32px;height:32px;font-size:17px}.brand{gap:8px}.brand b{font-size:8px}.brand small{font-size:7px}.flight-chip{padding:7px 9px;font-size:9px;gap:6px}.flight-chip span{display:none}.top-actions .wide{display:none}
+ .flight-summary{left:12px;top:68px;width:175px;padding:10px 11px}.summary-route b{font-size:20px}.summary-meta{font-size:8px}.map-tools{left:10px;top:auto;bottom:94px}.map-tools button{width:32px;height:32px}
+ .drawer{left:8px;right:8px;top:auto;bottom:76px;width:auto;max-height:min(58vh,500px);border-radius:18px}.drawer.hidden{transform:translateY(15px)}
+ .drawer-head{padding:12px 14px}.drawer-head h2{font-size:17px}.drawer-content{padding:12px 13px 18px}
+ .bottom-dock{bottom:9px;width:calc(100% - 16px);justify-content:space-around;border-radius:14px}.tab{flex:1;justify-content:center;gap:5px;padding:10px 4px;font-size:9px}.tab .ico{font-size:15px}
+ .map-hint{top:58px;font-size:8px}.toast{top:65px}
+}
+@media(max-width:390px){.brand small{letter-spacing:.08em}.flight-chip{display:none}.tab{font-size:8px}.tab .ico{display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+ <div id="globeViz"></div><div class="shade"></div>
+ <header class="topbar">
+  <div class="brand"><div class="logo">✿</div><div><b>VIETNAM AIRLINES</b><small>FLIGHT BRIEFING · SKYHOME</small></div></div>
+  <div class="flight-chip"><i class="chip-dot"></i><strong id="chipFlight">VN 220</strong><span id="chipRoute">SGN → HAN · HÔM NAY</span></div>
+  <div class="top-actions"><button class="icon-btn wide" id="langBtn">VI / EN</button><button class="icon-btn" id="fullBtn" aria-label="Toàn màn hình">⛶</button></div>
+ </header>
+ <div class="map-hint" id="mapHint">Chạm trực tiếp biểu tượng landmark trên quả địa cầu để xem thông tin</div>
+ <section class="flight-summary">
+  <div class="kicker">CHUYẾN BAY ĐANG CHỌN</div>
+  <div class="summary-route"><b id="sumFrom">SGN</b><span>✈</span><b id="sumTo">HAN</b></div>
+  <div class="summary-meta"><strong id="sumFlight">VN 220</strong><span id="sumTime">08:00 · 10:10</span></div><div class="route-photos" id="summaryPhotos"></div>
+ </section>
+ <div class="map-tools"><button id="homeBtn" title="Toàn cảnh">⌂</button><button id="zoomIn" title="Phóng to">＋</button><button id="zoomOut" title="Thu nhỏ">－</button></div>
+ <aside class="drawer" id="drawer">
+  <div class="drawer-head"><div><small id="drawerKicker">FLIGHT BRIEFING</small><h2 id="drawerTitle">Lịch bay của tôi</h2></div><button class="close" id="closeDrawer" aria-label="Thu gọn bảng">⌄</button></div>
+  <div class="drawer-content" id="drawerContent"></div>
+ </aside>
+ <nav class="bottom-dock" aria-label="Các chức năng chính">
+  <button class="tab active" data-tab="schedule"><span class="ico">▦</span>Lịch bay</button>
+  <button class="tab" data-tab="destinations"><span class="ico">◎</span>Điểm đến</button>
+  <button class="tab" data-tab="simulator"><span class="ico">✈</span>Mô phỏng</button>
+  <button class="tab" data-tab="documents"><span class="ico">▤</span>Tài liệu</button>
+  <button class="tab" data-tab="briefing"><span class="ico">☷</span>Họp đầu chuyến</button>
+ </nav>
+ <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+<script src="https://unpkg.com/globe.gl"></script>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),today=new Date(),todayISO=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const airports=[
+{code:'SGN',city:'TP. Hồ Chí Minh',en:'Ho Chi Minh City',country:'Việt Nam',lat:10.8188,lng:106.6519,tz:'Asia/Ho_Chi_Minh',gmt:'GMT+7',airport:'Tân Sơn Nhất',food:'Cơm tấm · Bánh mì · Hủ tiếu',travel:'Dinh Độc Lập · Bưu điện Trung tâm · Chợ Bến Thành',desc:'Cửa ngõ hàng không lớn của miền Nam Việt Nam.'},
+{code:'HAN',city:'Hà Nội',en:'Hanoi',country:'Việt Nam',lat:21.2187,lng:105.8042,tz:'Asia/Ho_Chi_Minh',gmt:'GMT+7',airport:'Nội Bài',food:'Phở · Bún chả · Chả cá',travel:'Hồ Gươm · Văn Miếu · Phố cổ Hà Nội',desc:'Cửa ngõ thủ đô, giàu giá trị lịch sử và văn hóa.'},
+{code:'DAD',city:'Đà Nẵng',en:'Da Nang',country:'Việt Nam',lat:16.0439,lng:108.1994,tz:'Asia/Ho_Chi_Minh',gmt:'GMT+7',airport:'Đà Nẵng',food:'Mì Quảng · Bún chả cá · Bánh tráng cuốn thịt heo',travel:'Bà Nà Hills · Sơn Trà · Biển Mỹ Khê · Hội An',desc:'Thành phố biển kết nối thiên nhiên và di sản miền Trung.'},
+{code:'BKK',city:'Bangkok',en:'Bangkok',country:'Thái Lan',lat:13.69,lng:100.7501,tz:'Asia/Bangkok',gmt:'GMT+7',airport:'Suvarnabhumi',food:'Pad Thai · Tom Yum · Xôi xoài',travel:'Wat Arun · Grand Palace · Chợ Chatuchak',desc:'Thủ đô sôi động với đền chùa, chợ và ẩm thực đường phố.'},
+{code:'SIN',city:'Singapore',en:'Singapore',country:'Singapore',lat:1.3644,lng:103.9915,tz:'Asia/Singapore',gmt:'GMT+8',airport:'Changi',food:'Hainanese chicken rice · Laksa · Chili crab',travel:'Gardens by the Bay · Marina Bay · Jewel Changi',desc:'Đô thị hiện đại, xanh và là trung tâm hàng không khu vực.'},
+{code:'NRT',city:'Tokyo',en:'Tokyo',country:'Nhật Bản',lat:35.772,lng:140.3929,tz:'Asia/Tokyo',gmt:'GMT+9',airport:'Narita',food:'Sushi · Ramen · Tempura',travel:'Asakusa · Shibuya · Tokyo Skytree',desc:'Thủ đô Nhật Bản, nơi truyền thống giao thoa công nghệ.'},
+{code:'KIX',city:'Osaka',en:'Osaka',country:'Nhật Bản',lat:34.4347,lng:135.244,tz:'Asia/Tokyo',gmt:'GMT+9',airport:'Kansai',food:'Takoyaki · Okonomiyaki · Kushikatsu',travel:'Dotonbori · Osaka Castle · Kyoto (lân cận)',desc:'Thành phố nổi tiếng với văn hóa ẩm thực và nhịp sống thân thiện.'},
+{code:'ICN',city:'Seoul',en:'Seoul',country:'Hàn Quốc',lat:37.4602,lng:126.4407,tz:'Asia/Seoul',gmt:'GMT+9',airport:'Incheon',food:'Bibimbap · Bulgogi · Kimchi',travel:'Gyeongbokgung · N Seoul Tower · Myeongdong',desc:'Cửa ngõ đến văn hóa và thủ đô năng động của Hàn Quốc.'},
+{code:'SYD',city:'Sydney',en:'Sydney',country:'Úc',lat:-33.9399,lng:151.1753,tz:'Australia/Sydney',gmt:'GMT+10/11',airport:'Kingsford Smith',food:'Meat pie · Seafood · Flat white',travel:'Opera House · Harbour Bridge · Bondi Beach',desc:'Thành phố cảng nổi tiếng với kiến trúc và bãi biển.'},
+{code:'LHR',city:'London',en:'London',country:'Vương quốc Anh',lat:51.47,lng:-0.4543,tz:'Europe/London',gmt:'GMT+0/+1',airport:'Heathrow',food:'Fish & chips · Sunday roast · Pie',travel:'Big Ben · Tower Bridge · British Museum',desc:'Trung tâm văn hóa, lịch sử và hàng không quốc tế.'},
+{code:'CDG',city:'Paris',en:'Paris',country:'Pháp',lat:49.0097,lng:2.5479,tz:'Europe/Paris',gmt:'GMT+1/+2',airport:'Charles de Gaulle',food:'Croissant · Baguette · Crêpe',travel:'Eiffel Tower · Louvre · Montmartre',desc:'Kinh đô nghệ thuật, thời trang và ẩm thực.'},
+{code:'FRA',city:'Frankfurt',en:'Frankfurt',country:'Đức',lat:50.0379,lng:8.5622,tz:'Europe/Berlin',gmt:'GMT+1/+2',airport:'Frankfurt',food:'Sausage · Pretzel · Apfelwein',travel:'Römerberg · Main Tower · Museumsufer',desc:'Đầu mối hàng không và tài chính quan trọng của châu Âu.'}
+ ];
+const airportPhotos={
+ SGN:'photo-1583417319070-4a69db38a482',HAN:'photo-1509030450996-dd1a26dda07a',DAD:'photo-1559592413-7cec4d0cae2b',
+ BKK:'photo-1508009603885-50cf7c579365',SIN:'photo-1525625293386-3f8f99389edd',NRT:'photo-1540959733332-eab4deabeeaf',
+ KIX:'photo-1590559899731-a382839e5549',ICN:'photo-1538485399081-7191377e8241',SYD:'photo-1506973035872-a4ec16b8e8d9',
+ LHR:'photo-1513635269975-59663e0ac1ad',CDG:'photo-1502602898657-3e91760cbb34',FRA:'photo-1519501025264-65ba15a82390'
+};
+airports.forEach(a=>a.image=`https://images.unsplash.com/${airportPhotos[a.code]||'photo-1470770841072-f978cf4d019e'}?auto=format&fit=crop&w=1000&q=85`);
+const airportDetails={
+SGN:{feature:"Nhịp sống đô thị năng động, giao thoa văn hóa Bắc–Trung–Nam; trung tâm thương mại và sáng tạo lớn của Việt Nam.",foodMore:"Cơm tấm sườn bì chả · Bánh mì Sài Gòn · Hủ tiếu · Phá lấu",travelMore:"Dinh Độc Lập · Bưu điện Thành phố · Chợ Bến Thành · Bảo tàng Chứng tích Chiến tranh · Landmark 81",tips:"Thành phố rộng và đông xe; nên dự trù thời gian di chuyển. Buổi sáng hoặc chiều muộn phù hợp để tham quan ngoài trời."},
+HAN:{feature:"Thủ đô nghìn năm văn hiến, nổi bật với hồ nước, phố cổ, kiến trúc Pháp và chiều sâu văn hóa.",foodMore:"Phở bò · Bún chả · Chả cá · Bánh cuốn Thanh Trì · Cà phê trứng",travelMore:"Hồ Hoàn Kiếm · Văn Miếu–Quốc Tử Giám · Phố cổ · Hoàng thành Thăng Long · Hồ Tây",tips:"Khu phố cổ dễ khám phá bằng đi bộ; thử ẩm thực ở các quán lâu đời và lưu ý giờ cao điểm."},
+DAD:{feature:"Thành phố biển thân thiện, có núi, bán đảo, bãi biển và nằm gần quần thể di sản miền Trung.",foodMore:"Mì Quảng · Bún chả cá · Bánh tráng cuốn thịt heo · Bánh xèo",travelMore:"Bán đảo Sơn Trà · Ngũ Hành Sơn · Biển Mỹ Khê · Bà Nà Hills · Phố cổ Hội An (lân cận)",tips:"Nên kết hợp biển và điểm tham quan thiên nhiên; mùa mưa miền Trung thường tập trung vào các tháng cuối năm."},
+BKK:{feature:"Đô thị sôi động bên sông Chao Phraya, nổi tiếng với đền chùa, trung tâm mua sắm và chợ đêm.",foodMore:"Pad Thai · Tom Yum · Som tam · Xôi xoài · Cà ri xanh",travelMore:"Grand Palace · Wat Arun · Wat Pho · Chợ Chatuchak · ICONSIAM",tips:"Trang phục kín đáo khi vào đền chùa; giao thông đông nên cân nhắc BTS/MRT hoặc thuyền trên sông."},
+SIN:{feature:"Quốc đảo hiện đại, sạch và xanh; nổi bật với quy hoạch đô thị, vườn sinh thái và cộng đồng đa văn hóa.",foodMore:"Cơm gà Hải Nam · Laksa · Chili crab · Kaya toast · Satay",travelMore:"Gardens by the Bay · Marina Bay Sands · Merlion Park · Sentosa · Jewel Changi",tips:"Di chuyển thuận tiện bằng MRT; thời tiết nóng ẩm quanh năm, nên mang nước và chuẩn bị áo mưa nhẹ."},
+NRT:{feature:"Cửa ngõ quốc tế phía đông Tokyo; thuận tiện kết nối thủ đô Nhật Bản và vùng Chiba.",foodMore:"Sushi · Ramen · Tempura · Unagi · Wagashi",travelMore:"Naritasan Shinshoji · Phố cổ Omotesando (Narita) · Tokyo Skytree · Asakusa · Shibuya (Tokyo)",tips:"Narita cách trung tâm Tokyo khá xa; kiểm tra tuyến tàu và thời gian nối chuyến trước khi khởi hành."},
+KIX:{feature:"Sân bay Kansai trên đảo nhân tạo, phục vụ vùng Kansai giàu di sản, ẩm thực và văn hóa đại chúng.",foodMore:"Takoyaki · Okonomiyaki · Kushikatsu · Kitsune udon · Yakiniku",travelMore:"Dotonbori · Lâu đài Osaka · Universal Studios Japan · Kyoto · Nara",tips:"Osaka là điểm trung chuyển thuận tiện để khám phá Kyoto và Nara; nên kiểm tra lịch tàu cuối ngày."},
+ICN:{feature:"Cửa ngõ hiện đại của Seoul và vùng thủ đô Hàn Quốc; kết hợp công nghệ, văn hóa đại chúng và di sản cung đình.",foodMore:"Bibimbap · Bulgogi · Kimchi · Gà rán Hàn Quốc · Tteokbokki",travelMore:"Gyeongbokgung · Bukchon Hanok Village · N Seoul Tower · Myeongdong · Hongdae",tips:"Sân bay Incheon nằm ngoài trung tâm Seoul; AREX và xe buýt sân bay là các lựa chọn phổ biến."},
+SYD:{feature:"Thành phố cảng đa văn hóa, có bờ biển đẹp, công trình biểu tượng và đời sống ngoài trời.",foodMore:"Meat pie · Hải sản · Fish and chips · Flat white · Lamington",travelMore:"Sydney Opera House · Harbour Bridge · The Rocks · Bondi Beach · Royal Botanic Garden",tips:"Tia UV ở Úc có thể mạnh; dùng kem chống nắng và kiểm tra phương tiện công cộng khi đi bãi biển."},
+LHR:{feature:"Cửa ngõ London và Vương quốc Anh; thành phố nổi bật với lịch sử hoàng gia, bảo tàng và sân khấu.",foodMore:"Fish and chips · Sunday roast · Pie and mash · Afternoon tea",travelMore:"Big Ben · Tower of London · British Museum · Buckingham Palace · Tower Bridge",tips:"London có mạng lưới tàu điện rộng; kiểm tra khu vực fare và phương thức thanh toán trước khi đi."},
+CDG:{feature:"Cửa ngõ chính của Paris, thành phố nổi tiếng với nghệ thuật, thời trang, kiến trúc và văn hóa quán cà phê.",foodMore:"Croissant · Baguette · Crêpe · Macaron · Boeuf bourguignon",travelMore:"Eiffel Tower · Louvre · Notre-Dame · Montmartre · Musée d'Orsay",tips:"CDG cách trung tâm Paris một quãng đáng kể; dành thời gian cho thủ tục và phương tiện RER/xe buýt."},
+FRA:{feature:"Trung tâm tài chính và đầu mối giao thông của Đức; kết hợp đường chân trời hiện đại với khu phố cổ ven sông Main.",foodMore:"Frankfurter Würstchen · Pretzel · Apfelwein · Grüne Soße",travelMore:"Römerberg · Main Tower · Museumsufer · Palmengarten · Nhà Goethe",tips:"Ga tàu sân bay kết nối thuận tiện với nhiều thành phố Đức; chú ý phân biệt ga Regionalbahnhof và Fernbahnhof."}
+};
+airports.forEach(a=>Object.assign(a,airportDetails[a.code]||{}));
+const byCode=Object.fromEntries(airports.map(a=>[a.code,a]));
+const landmarkIcons={SGN:'🏙️',HAN:'🏯',DAD:'🌉',BKK:'🛕',SIN:'🦁',NRT:'🗼',KIX:'🏯',ICN:'🏙️',SYD:'🎭',LHR:'🕰️',CDG:'🗼',FRA:'🏙️'};
+function landmarkElement(a,kind='airport'){
+ const el=document.createElement('button');
+ el.className='map-sticker '+(kind==='nearby'?'nearby':'')+((a.code===selectedFlight?.from||a.code===selectedFlight?.to)?' endpoint':'');
+ el.innerHTML=`<span class="landmark">${landmarkIcons[a.code]||'✦'}</span><span class="airport-code">${a.code}</span>`;
+ el.title=`Nhấn để khám phá ${a.city} · ${a.airport}`;
+ el.dataset.airportCode=a.code;
+ el.setAttribute('aria-label',`Mở thông tin điểm đến ${a.city}, sân bay ${a.code}`);
+ el.setAttribute('type','button');
+ airportMarkerEls[a.code]=el;
+ return el;
+}
+function vnaPlaneElement(){
+ const el=document.createElement('div');el.className='plane-vna';el.title='Vietnam Airlines · Máy bay đang bay';
+ el.innerHTML=`<svg viewBox="0 0 100 100" role="img" aria-label="Máy bay Vietnam Airlines"><path d="M48 8 C53 8 56 14 57 23 L61 43 L87 57 Q91 60 88 64 L85 67 L59 61 L57 78 L69 87 L68 92 L50 87 L32 92 L31 87 L43 78 L41 61 L15 67 L12 64 Q9 60 13 57 L39 43 L43 23 C44 14 46 8 48 8Z" fill="#07528d" stroke="#d6b25d" stroke-width="2.8"/><path d="M47 16 L50 16 L52 45 L48 46Z" fill="#e8c66e"/><path d="M45 72 Q50 76 55 72 L55 80 L50 83 L45 80Z" fill="#e8c66e"/><text x="50" y="57" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">VN</text></svg>`;
+ return el;
+}
+
+const sample=[
+{id:'s1',date:todayISO(),flight:'VN 220',from:'SGN',to:'HAN',dep:'08:00',arr:'10:10',role:'Tiếp viên',status:'Hôm nay'},
+{id:'s2',date:todayISO(),flight:'VN 123',from:'HAN',to:'DAD',dep:'13:30',arr:'14:50',role:'Tiếp viên',status:'Hôm nay'},
+{id:'s3',date:addDays(today,1),flight:'VN 605',from:'SGN',to:'BKK',dep:'09:15',arr:'10:45',role:'Tiếp viên',status:'Sắp tới'},
+{id:'s4',date:addDays(today,3),flight:'VN 651',from:'SGN',to:'SIN',dep:'16:00',arr:'19:10',role:'Tiếp viên',status:'Sắp tới'},
+{id:'s5',date:addDays(today,5),flight:'VN 310',from:'HAN',to:'NRT',dep:'00:20',arr:'07:00',role:'Tiếp viên',status:'Sắp tới'},
+{id:'s6',date:addDays(today,8),flight:'VN 417',from:'SGN',to:'ICN',dep:'23:40',arr:'06:30',role:'Tiếp viên',status:'Sắp tới'}
+];
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`}
+const defaultFlights=sample;
+let flights=load('vna_flights',defaultFlights),selectedFlight=flights.find(f=>f.date===todayISO())||flights[0],tab='schedule',lang='vi',drawerOpen=true,globe=null,month=new Date(today.getFullYear(),today.getMonth(),1),selectedDate=todayISO(),toastTimer=null,routeCities=[],simTimer=null,simFrame=0,simPlaneEl=null,airportMarkerEls={},simProgress=0,simActive=false,simRestoreRotate=false,selectedAirportCode=null;
+let documents=load('vna_docs',[]),checkState=load('vna_checks',{});
+function load(k,fallback){try{return JSON.parse(localStorage.getItem(k))??fallback}catch(e){return fallback}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function toast(s){$('toast').textContent=s;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2300)}
+function fmtDate(s){const d=new Date(s+'T12:00:00');return d.toLocaleDateString(lang==='vi'?'vi-VN':'en-GB',{day:'2-digit',month:'short',year:'numeric'})}
+function airportLabel(a){return lang==='vi'?a.city:a.en}
+function routeCityCodes(from,to){
+  // Chỉ hiển thị các sân bay trong danh mục nằm gần hành lang bay trực tiếp.
+  // Đây là điểm tham khảo trên bản đồ, không phải điểm dừng hay chặng nối chuyến.
+  const a=byCode[from],b=byCode[to];if(!a||!b)return [];
+  const rad=x=>x*Math.PI/180;
+  const toVec=p=>{const lat=rad(p.lat),lng=rad(p.lng);return [Math.cos(lat)*Math.cos(lng),Math.cos(lat)*Math.sin(lng),Math.sin(lat)]};
+  const dot=(u,v)=>u[0]*v[0]+u[1]*v[1]+u[2]*v[2];
+  const cross=(u,v)=>[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+  const norm=u=>Math.hypot(...u);
+  const A=toVec(a),B=toVec(b),normal=cross(A,B),nn=norm(normal);
+  if(!nn)return [];
+  const N=normal.map(v=>v/nn),total=Math.acos(Math.max(-1,Math.min(1,dot(A,B))));
+  return airports.filter(p=>p.code!==from&&p.code!==to).map(p=>{
+    const P=toVec(p),crossTrack=Math.asin(Math.min(1,Math.abs(dot(P,N))));
+    const along=Math.atan2(dot(cross(N,P),A),dot(P,A));
+    return {code:p.code,along,distance:crossTrack};
+  }).filter(p=>p.along>0.015&&p.along<total-0.015&&p.distance<rad(9))
+    .sort((x,y)=>x.along-y.along).map(p=>p.code);
+}
+function updateFlightHeader(){
+ if(!selectedFlight)return;
+ const f=selectedFlight,a=byCode[f.from],b=byCode[f.to];
+ $('chipFlight').textContent=f.flight;$('chipRoute').textContent=`${f.from} → ${f.to} · ${fmtDate(f.date).toUpperCase()}`;
+ $('sumFrom').textContent=f.from;$('sumTo').textContent=f.to;$('sumFlight').textContent=f.flight;$('sumTime').textContent=`${f.dep} · ${f.arr}`;if($('summaryPhotos'))$('summaryPhotos').innerHTML=[a,b].map(x=>`<div class="route-photo"><img src="${x.image}" alt="${x.city}"><b>${x.code} · ${x.city}</b></div>`).join('');
+}
+function updateMapRoute(){
+ if(!globe||!selectedFlight)return;
+ const f=selectedFlight,a=byCode[f.from],b=byCode[f.to];if(!a||!b)return;
+ routeCities=routeCityCodes(f.from,f.to);
+ airportMarkerEls={};
+ globe.arcsData([{startLat:a.lat,startLng:a.lng,endLat:b.lat,endLng:b.lng}])
+  .pointsData([]).labelsData([]);
+ globe.htmlElementsData(airports.map(a=>({...a,kind:'airport'})))
+  .htmlLat(d=>d.lat).htmlLng(d=>d.lng).htmlAltitude(d=>(d.code===f.from||d.code===f.to)?.075:.035)
+  .htmlElement(d=>landmarkElement(d));
+ globe.pointOfView({lat:(a.lat+b.lat)/2,lng:midLng(a.lng,b.lng),altitude:Math.max(1.45,Math.min(2.7,1.2+Math.abs(a.lat-b.lat)/35))},900);
+ updateFlightHeader();
+}
+function distanceKm(a,b){const r=Math.PI/180,dl=(b.lat-a.lat)*r,dg=(b.lng-a.lng)*r,x=Math.sin(dl/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dg/2)**2;return 6371*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x))}
+function interpolateGreatCircle(a,b,t){const rad=x=>x*Math.PI/180,deg=x=>x*180/Math.PI,la1=rad(a.lat),lo1=rad(a.lng),la2=rad(b.lat),lo2=rad(b.lng),v1=[Math.cos(la1)*Math.cos(lo1),Math.cos(la1)*Math.sin(lo1),Math.sin(la1)],v2=[Math.cos(la2)*Math.cos(lo2),Math.cos(la2)*Math.sin(lo2),Math.sin(la2)],dot=Math.max(-1,Math.min(1,v1.reduce((q,x,i)=>q+x*v2[i],0))),omega=Math.acos(dot),sin=Math.sin(omega);if(!sin)return {lat:a.lat,lng:a.lng};const x=v1.map((v,i)=>(Math.sin((1-t)*omega)*v+Math.sin(t*omega)*v2[i])/sin),lng=deg(Math.atan2(x[1],x[0]));return {lat:deg(Math.atan2(x[2],Math.hypot(x[0],x[1]))),lng}}
+function renderSimulator(){
+ const f=selectedFlight||{from:'SGN',to:'HAN',dep:'08:00',arr:'10:10',flight:'VN 220'},a=byCode[f.from],b=byCode[f.to];
+ $('drawerContent').innerHTML=`<div class="kicker">FLIGHT EXPERIENCE · 3D</div><div class="sim-hero"><img src="${a.image}" alt="${a.city}"><div>Hành trình khám phá bầu trời</div></div><div class="field"><label>ĐIỂM KHỞI HÀNH</label><select id="simFrom">${airports.map(x=>`<option value="${x.code}" ${x.code===f.from?'selected':''}>${x.code} · ${x.city}</option>`).join('')}</select></div><div class="field"><label>ĐIỂM ĐẾN</label><select id="simTo">${airports.map(x=>`<option value="${x.code}" ${x.code===f.to?'selected':''}>${x.code} · ${x.city}</option>`).join('')}</select></div><div class="sim-endpoints"><div class="sim-endpoint"><img id="simFromImg" src="${a.image}"><div><b id="simFromCode">${a.code}</b><small id="simFromCity">${a.city}</small></div></div><div class="sim-endpoint"><img id="simToImg" src="${b.image}"><div><b id="simToCode">${b.code}</b><small id="simToCity">${b.city}</small></div></div></div><div class="metric-grid" style="margin-top:9px"><div class="metric"><small>THỜI GIAN BAY ƯỚC TÍNH</small><b id="simDuration">${estimateDuration(a,b)}</b></div><div class="metric"><small>QUÃNG ĐƯỜNG</small><b id="simDistance">${Math.round(distanceKm(a,b)).toLocaleString('vi-VN')} km</b></div></div><div class="sim-progress"><span id="simProgressBar"></span></div><div class="flight-foot"><span id="simStatus">Sẵn sàng cất cánh</span><b id="simPercent">0%</b></div><div class="btn-row"><button class="btn" id="startSimulation">✈ BẮT ĐẦU MÔ PHỎNG · 10 GIÂY</button><button class="btn secondary" id="resetSimulation">ĐẶT LẠI</button></div><p class="muted" style="font-size:9px;line-height:1.5">Khi máy bay bay qua khu vực gần các sân bay trong danh mục, biểu tượng điểm đến sẽ phát sáng. Chạm vào biểu tượng để xem ảnh và thông tin thành phố. Thời gian bay là ước tính mô phỏng, không phải lịch khai thác thực tế.</p>`;
+ const refresh=()=>{const x=byCode[$('simFrom').value],y=byCode[$('simTo').value];$('simFromImg').src=x.image;$('simToImg').src=y.image;$('simFromCode').textContent=x.code;$('simToCode').textContent=y.code;$('simFromCity').textContent=x.city;$('simToCity').textContent=y.city;$('simDuration').textContent=estimateDuration(x,y);$('simDistance').textContent=Math.round(distanceKm(x,y)).toLocaleString('vi-VN')+' km'};
+ $('simFrom').onchange=refresh;$('simTo').onchange=refresh;
+ $('startSimulation').onclick=()=>{const from=$('simFrom').value,to=$('simTo').value;if(from===to){toast('Hãy chọn hai sân bay khác nhau.');return}runSimulation(from,to)};
+ $('resetSimulation').onclick=()=>{stopSimulation();$('startSimulation').disabled=false;$('simProgressBar').style.width='0%';$('simPercent').textContent='0%';$('simStatus').textContent='Sẵn sàng cất cánh';if(globe&&selectedFlight)updateMapRoute()};
+}
+function estimateDuration(a,b){const h=distanceKm(a,b)/800+.35;return `${Math.floor(h)} giờ ${Math.round((h%1)*60)} phút`}
+function stopSimulation(){
+ if(simTimer){clearTimeout(simTimer);simTimer=null}
+ if(simFrame){cancelAnimationFrame(simFrame);simFrame=0}
+ simActive=false;
+ if(simPlaneEl){simPlaneEl.remove();simPlaneEl=null}
+ Object.entries(airportMarkerEls).forEach(([code,el])=>{if(!el)return;el.classList.remove('nearby');el.classList.toggle('endpoint',code===selectedFlight?.from||code===selectedFlight?.to)});
+ if(globe&&globe.controls())globe.controls().autoRotate=false;
+}
+function runSimulation(from,to){
+ stopSimulation();
+ const a=byCode[from],b=byCode[to];
+ if(!a||!b||!globe){toast('Bản đồ chưa sẵn sàng. Hãy kiểm tra kết nối rồi thử lại.');return}
+ const duration=10000,startTime=performance.now();
+ simRestoreRotate=false;
+ simActive=true;
+ $('simStatus').textContent='Máy bay đang trên hành trình';
+ $('startSimulation').disabled=true;
+ // Giữ nguyên toàn bộ landmark DOM để người dùng luôn có thể nhấn xem thông tin.
+ Object.entries(airportMarkerEls).forEach(([code,el])=>{if(!el)return;el.classList.remove('nearby');el.classList.toggle('endpoint',code===from||code===to)});
+ globe.controls().autoRotate=false;
+ globe.arcsData([{startLat:a.lat,startLng:a.lng,endLat:b.lat,endLng:b.lng}]);
+ // Đặt góc nhìn một lần duy nhất trước khi bay; không kéo camera theo máy bay mỗi frame.
+ globe.pointOfView({lat:(a.lat+b.lat)/2,lng:midLng(a.lng,b.lng),altitude:Math.max(1.5,Math.min(2.5,1.35+Math.abs(a.lat-b.lat)/42))},650);
+ simPlaneEl=document.createElement('div');
+ simPlaneEl.className='plane-overlay';
+ simPlaneEl.appendChild(vnaPlaneElement());
+ $('app').appendChild(simPlaneEl);
+ let lastPercent=-1,lastNearby='';
+ const frame=(now)=>{
+  if(!simActive||!globe)return;
+  const raw=Math.min(1,(now-startTime)/duration);
+  // Smoothstep easing avoids abrupt start/stop while preserving the 10-second duration.
+  const t=raw*raw*(3-2*raw);
+  const pos=interpolateGreatCircle(a,b,t);
+  const screen=globe.getScreenCoords?globe.getScreenCoords(pos.lat,pos.lng,.12):null;
+  if(screen&&Number.isFinite(screen.x)&&Number.isFinite(screen.y)){
+   simPlaneEl.style.transform=`translate3d(${screen.x}px,${screen.y}px,0) translate(-50%,-50%)`;
+  }
+  const near=airports.filter(p=>p.code!==from&&p.code!==to&&distanceKm(pos,p)<650).map(p=>p.code);
+  const nearKey=near.join('|');
+  if(nearKey!==lastNearby){
+   Object.entries(airportMarkerEls).forEach(([code,el])=>{
+    if(!el)return;
+    const active=near.includes(code);
+    el.classList.toggle('nearby',active);
+   });
+   lastNearby=nearKey;
+  }
+  const percent=Math.floor(raw*100);
+  if(percent!==lastPercent){
+   $('simProgressBar').style.width=percent+'%';
+   $('simPercent').textContent=percent+'%';
+   $('simStatus').textContent=raw>=1?'Đã hạ cánh':`Đang bay · ${near.length} điểm bay lân cận`;
+   lastPercent=percent;
+  }
+  if(raw>=1){
+   simActive=false;simFrame=0;
+   if(simPlaneEl){simPlaneEl.remove();simPlaneEl=null}
+   Object.entries(airportMarkerEls).forEach(([code,el])=>{if(!el)return;el.classList.remove('nearby');el.classList.toggle('endpoint',code===from||code===to)});
+   globe.controls().autoRotate=false;
+   $('startSimulation').disabled=false;
+   $('simStatus').textContent='Đã hạ cánh tại '+b.city;
+   toast('Chuyến bay mô phỏng đã hạ cánh!');
+   return;
+  }
+  simFrame=requestAnimationFrame(frame);
+ };
+ simFrame=requestAnimationFrame(frame);
+}
+
+function midLng(a,b){let d=b-a;if(d>180)d-=360;if(d< -180)d+=360;return a+d/2}
+function showAirport(code){
+ const a=byCode[code];if(!a)return;
+ selectedAirportCode=code;
+ Object.entries(airportMarkerEls).forEach(([markerCode,el])=>{
+  if(!el)return;
+  el.classList.toggle('selected',markerCode===code);
+  el.setAttribute('aria-pressed',markerCode===code?'true':'false');
+ });
+ $('mapHint').textContent=`ĐANG KHÁM PHÁ · ${a.city.toUpperCase()} · ${a.code}`;
+ setTab('destinations',true);
+ const local=new Intl.DateTimeFormat(lang==='vi'?'vi-VN':'en-GB',{hour:'2-digit',minute:'2-digit',timeZone:a.tz}).format(new Date());
+ $('drawerTitle').textContent=`${a.city} · ${a.code}`;
+ $('drawerContent').innerHTML=`<div class="sim-hero"><img src="${a.image}" alt="${a.city}"><div>${a.city} · ${a.code}</div></div>
+ <div class="airport-card"><div class="kicker">${a.country.toUpperCase()} · ${a.code}</div><h3 style="font:600 24px 'Playfair Display',serif;margin-top:7px">${airportLabel(a)}</h3><p>${a.desc}</p><p><b>Đặc trưng:</b> ${a.feature}</p>
+ <div class="metric-grid"><div class="metric"><small>SÂN BAY / AIRPORT</small><b>${a.airport}</b></div><div class="metric"><small>MÃ SÂN BAY / IATA</small><b>${a.code}</b></div><div class="metric"><small>MÚI GIỜ / TIME ZONE</small><b>${a.gmt}</b></div><div class="metric"><small>GIỜ ĐỊA PHƯƠNG / LOCAL TIME</small><b>${local}</b></div></div></div>
+ <div class="subheading">🍜 ẨM THỰC ĐỊA PHƯƠNG</div><div class="airport-card"><p style="margin:0">${a.foodMore||a.food}</p></div>
+ <div class="subheading">📍 ĐỊA ĐIỂM DU LỊCH NỔI BẬT</div><div class="airport-card"><p style="margin:0">${a.travelMore||a.travel}</p></div>
+ <div class="subheading">✦ ĐẶC ĐIỂM & GỢI Ý KHÁM PHÁ</div><div class="airport-card"><p style="margin:0">${a.tips||a.desc}</p></div>
+ <div class="btn-row"><button class="btn secondary" id="backToDestinations">← Danh sách điểm bay</button><button class="btn secondary" id="backToSchedule">Về lịch bay</button></div>`;
+ $('backToDestinations').onclick=()=>setTab('destinations',true);
+ $('backToSchedule').onclick=()=>setTab('schedule',true);
+ if(globe)globe.pointOfView({lat:a.lat,lng:a.lng,altitude:1.05},800);
+}
+function renderCalendar(){
+ const y=month.getFullYear(),m=month.getMonth(),first=new Date(y,m,1),offset=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();
+ const monthName=month.toLocaleDateString('vi-VN',{month:'long',year:'numeric'});
+ let html=`<div class="month-nav"><button id="prevMonth">‹</button><strong>${monthName}</strong><button id="nextMonth">›</button></div><div class="calendar">${['T2','T3','T4','T5','T6','T7','CN'].map(d=>`<div class="weekday">${d}</div>`).join('')}`;
+ for(let i=0;i<offset;i++)html+=`<div></div>`;
+ for(let d=1;d<=days;d++){const date=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,has=flights.some(f=>f.date===date);html+=`<button class="day ${date===todayISO()?'today':''} ${date===selectedDate?'selected':''} ${has?'has-flight':''}" data-date="${date}">${d}</button>`}
+ html+='</div>';
+ $('drawerContent').innerHTML=html+`<div class="subheading">CHUYẾN BAY · ${fmtDate(selectedDate).toUpperCase()}</div><div id="dayFlights"></div><div class="subheading">THÊM CHUYẾN BAY VÀO LỊCH</div><div class="field"><label>NGÀY BAY</label><input id="newDate" type="date" value="${selectedDate}"></div><div class="field"><label>SỐ HIỆU CHUYẾN BAY</label><input id="newFlight" placeholder="Ví dụ: VN 123"></div><div class="field"><label>CHẶNG BAY</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><select id="newFrom">${airports.map(a=>`<option value="${a.code}">${a.code} · ${a.city}</option>`).join('')}</select><select id="newTo">${airports.map(a=>`<option value="${a.code}">${a.code} · ${a.city}</option>`).join('')}</select></div></div><div class="field"><label>GIỜ ĐI / GIỜ ĐẾN</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><input id="newDep" type="time" value="08:00"><input id="newArr" type="time" value="10:00"></div></div><div class="field"><label>ĐỐI TƯỢNG HỌP</label><select id="newRole"><option>Tiếp viên</option><option>Phi công</option></select></div><button class="btn" id="addFlight">＋ LƯU CHUYẾN BAY</button><p class="muted" style="font-size:9px;line-height:1.5">Lịch mẫu để trải nghiệm. Bạn có thể tự nhập lịch bay; dữ liệu được lưu trên trình duyệt đang sử dụng.</p>`;
+ $('prevMonth').onclick=()=>{month=new Date(y,m-1,1);renderCalendar()};$('nextMonth').onclick=()=>{month=new Date(y,m+1,1);renderCalendar()};
+ document.querySelectorAll('[data-date]').forEach(b=>b.onclick=()=>{selectedDate=b.dataset.date;renderCalendar()});
+ renderDayFlights();
+ $('addFlight').onclick=()=>{
+  const date=$('newDate').value,flight=$('newFlight').value.trim().toUpperCase(),from=$('newFrom').value,to=$('newTo').value,dep=$('newDep').value,arr=$('newArr').value,role=$('newRole').value;
+  if(!date||!flight||!dep||!arr||from===to){toast('Vui lòng nhập đủ thông tin và chọn hai sân bay khác nhau.');return}
+  const f={id:'f'+Date.now(),date,flight,from,to,dep,arr,role,status:'Đã thêm'};
+  flights.push(f);save('vna_flights',flights);selectedDate=date;selectedFlight=f;month=new Date(date+'T12:00:00');renderCalendar();updateMapRoute();toast('Đã thêm chuyến bay vào lịch');
+ };
+}
+function renderDayFlights(){
+ const list=flights.filter(f=>f.date===selectedDate).sort((a,b)=>a.dep.localeCompare(b.dep)),el=$('dayFlights');
+ if(!list.length){el.innerHTML='<div class="empty">Chưa có chuyến bay trong ngày này.<br>Thêm chuyến bay bằng biểu mẫu bên dưới.</div>';return}
+ el.innerHTML=list.map(f=>`<div class="flight-card ${selectedFlight?.id===f.id?'selected':''}" data-flight="${f.id}"><div class="flight-row"><span class="flight-no">${f.flight}</span><span class="flight-date">${fmtDate(f.date)}</span></div><div class="flight-route"><b>${f.from}</b><span>✈ ─────────</span><b>${f.to}</b></div><div class="flight-foot"><span>${f.dep} → ${f.arr}</span><span class="status">${f.status||'Theo lịch'}</span></div></div>`).join('');
+ document.querySelectorAll('[data-flight]').forEach(card=>card.onclick=()=>{selectedFlight=flights.find(f=>f.id===card.dataset.flight);updateMapRoute();renderDayFlights();toast('Đã hiển thị chặng bay '+selectedFlight.flight)});
+}
+function renderDestinations(){
+ const f=selectedFlight,a=byCode[f.from],b=byCode[f.to],via=routeCities.map(c=>byCode[c]);
+ $('drawerContent').innerHTML=`<div class="subheading">CHẶNG BAY ĐANG CHỌN</div><div class="route-pair"><div class="airport-card"><b>${a.code}</b><p>${airportLabel(a)}</p></div><div style="color:var(--gold)">✈</div><div class="airport-card"><b>${b.code}</b><p>${airportLabel(b)}</p></div></div><div class="subheading">TẤT CẢ ĐIỂM BAY TRÊN BẢN ĐỒ</div><p class="muted" style="font-size:10px;line-height:1.5">Chạm trực tiếp vào biểu tượng landmark trên quả địa cầu hoặc chọn thành phố bên dưới. Điểm được chọn sẽ phát sáng và quả địa cầu tự căn đến vị trí đó; hồ sơ gồm thông tin sân bay, ẩm thực, điểm tham quan, nét đặc trưng và gợi ý khám phá. Các điểm này là danh mục tham khảo, không đồng nghĩa với điểm dừng của chuyến bay.</p><div>${airports.map(c=>`<button class="city-tag" data-city="${c.code}">${landmarkIcons[c.code]||'✦'} ${c.code} · ${c.city}</button>`).join('')}</div><div class="subheading">THÔNG TIN ĐIỂM ĐI</div><div class="airport-card"><h3>${a.city} · ${a.code}</h3><p>${a.airport} Airport · ${a.gmt}</p><p><b>Ẩm thực:</b> ${a.food}</p><p><b>Du lịch:</b> ${a.travel}</p></div><div class="subheading">THÔNG TIN ĐIỂM ĐẾN</div><div class="airport-card"><h3>${b.city} · ${b.code}</h3><p>${b.airport} Airport · ${b.gmt}</p><p><b>Ẩm thực:</b> ${b.food}</p><p><b>Du lịch:</b> ${b.travel}</p></div>`;
+ document.querySelectorAll('[data-city]').forEach(btn=>btn.onclick=()=>showAirport(btn.dataset.city));
+}
+function renderDocuments(){
+ $('drawerContent').innerHTML=`<p class="muted" style="font-size:10px;line-height:1.6">Kho tài liệu phục vụ họp đầu chuyến. Tải tài liệu của chuyến bay lên để lưu trong trình duyệt hiện tại; không tự động đồng bộ với hệ thống công ty.</p><div class="subheading">TÀI LIỆU THEO NHÓM</div><div class="field"><label>NHÓM TÀI LIỆU</label><select id="docCategory"><option>An toàn</option><option>An ninh</option><option>Dịch vụ</option><option>Thông tin chuyến bay</option><option>Khác</option></select></div><div class="field"><label>CHỌN TỆP PDF / DOC / HÌNH ẢNH</label><input id="docFile" type="file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png"></div><button class="btn" id="uploadDocs">＋ THÊM TÀI LIỆU</button><div class="subheading">TÀI LIỆU ĐÃ THÊM</div><div id="docList"></div>`;
+ $('uploadDocs').onclick=async()=>{
+  const files=[...$('docFile').files],cat=$('docCategory').value;if(!files.length){toast('Hãy chọn ít nhất một tài liệu.');return}
+  for(const file of files){if(file.size>2*1024*1024){toast(file.name+' vượt quá 2 MB, bỏ qua để tránh đầy bộ nhớ trình duyệt.');continue}
+   const data=await readFile(file);documents.push({id:'d'+Date.now()+Math.random().toString(16).slice(2),name:file.name,size:file.size,type:file.type,category:cat,data});}
+  save('vna_docs',documents);renderDocList();$('docFile').value='';toast('Đã thêm tài liệu vào kho trên thiết bị');
+ };
+ renderDocList();
+}
+function readFile(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
+function renderDocList(){
+ const el=$('docList');if(!el)return;
+ if(!documents.length){el.innerHTML='<div class="empty">Chưa có tài liệu. Hãy tải lên checklist an toàn, tài liệu dịch vụ, thông tin sân bay hoặc briefing chuyến bay.</div>';return}
+ el.innerHTML=documents.map(d=>`<div class="doc-card"><div class="doc-icon">▤</div><div class="doc-main"><b>${d.name}</b><small>${d.category} · ${(d.size/1024).toFixed(0)} KB</small></div><div class="doc-actions"><button data-open-doc="${d.id}">Mở</button><button data-del-doc="${d.id}">×</button></div></div>`).join('');
+ document.querySelectorAll('[data-open-doc]').forEach(b=>b.onclick=()=>{const d=documents.find(x=>x.id===b.dataset.openDoc);if(d){const w=window.open();if(w){if(d.type.startsWith('image/'))w.document.write(`<img src="${d.data}" style="max-width:100%">`);else w.location.href=d.data;}else toast('Trình duyệt đã chặn cửa sổ mở tài liệu.')}});
+ document.querySelectorAll('[data-del-doc]').forEach(b=>b.onclick=()=>{documents=documents.filter(x=>x.id!==b.dataset.delDoc);save('vna_docs',documents);renderDocList()});
+}
+const checklist=[
+['Crew briefing & phân công','Rà soát vị trí, nhiệm vụ, phối hợp tổ bay và tình huống đặc biệt.'],
+['An toàn cabin','Cửa thoát hiểm, trang thiết bị an toàn, demo và quy trình khẩn nguy.'],
+['An ninh hàng không','Kiểm tra cabin, vật phẩm bất thường và quy trình an ninh.'],
+['Thông tin hành khách đặc biệt','WCHC/WCHR, UM, INF, khách cần hỗ trợ và yêu cầu đặc biệt.'],
+['Dịch vụ & suất ăn','Menu, suất ăn đặc biệt, đồ uống, sản phẩm và tiêu chuẩn phục vụ.'],
+['Thông tin điểm đến','Thời tiết, giờ địa phương, sân bay, lưu ý khai thác và văn hóa.'],
+['Xác nhận phối hợp tổ lái','Thống nhất thông tin khai thác, thời gian, liên lạc và nội dung cần lưu ý.']
+];
+function renderBriefing(){
+ const f=selectedFlight,a=byCode[f.from],b=byCode[f.to],key=f.id,done=checkState[key]||[];
+ $('drawerContent').innerHTML=`<div class="airport-card"><div class="kicker">PRE-FLIGHT BRIEFING</div><h3 style="font:600 21px 'Playfair Display',serif;margin:7px 0">${f.flight} · ${f.from} → ${f.to}</h3><p style="margin:0">${fmtDate(f.date)} · ${f.dep} – ${f.arr} · ${f.role||'Tổ bay'}</p></div><div class="subheading">CHECKLIST HỌP ĐẦU CHUYẾN</div><div class="flight-foot"><span>Tiến độ hoàn thành</span><strong id="checkCount">${done.length}/${checklist.length}</strong></div><div class="progress"><span id="progressBar" style="width:${done.length/checklist.length*100}%"></span></div>${checklist.map((c,i)=>`<label class="check-card"><input type="checkbox" data-check="${i}" ${done.includes(i)?'checked':''}><span><b>${c[0]}</b><small>${c[1]}</small></span></label>`).join('')}<div class="subheading">GHI CHÚ CUỘC HỌP</div><div class="field"><label>NỘI DUNG CẦN LƯU Ý</label><textarea id="briefNote" placeholder="Ghi chú phân công, lưu ý an toàn, dịch vụ...">${load('vna_note_'+key,'')}</textarea></div><div class="btn-row"><button class="btn" id="saveNote">LƯU GHI CHÚ</button><button class="btn secondary" id="resetChecks">ĐẶT LẠI CHECKLIST</button></div><p class="muted" style="font-size:9px;line-height:1.5">Checklist là khung tham khảo để tổ bay tùy chỉnh theo quy trình, tài liệu và chỉ đạo khai thác chính thức.</p>`;
+ document.querySelectorAll('[data-check]').forEach(cb=>cb.onchange=()=>{let arr=checkState[key]||[];const n=Number(cb.dataset.check);arr=cb.checked?[...new Set([...arr,n])]:arr.filter(x=>x!==n);checkState[key]=arr;save('vna_checks',checkState);$('checkCount').textContent=arr.length+'/'+checklist.length;$('progressBar').style.width=(arr.length/checklist.length*100)+'%'});
+ $('saveNote').onclick=()=>{save('vna_note_'+key,$('briefNote').value);toast('Đã lưu ghi chú cuộc họp')};
+ $('resetChecks').onclick=()=>{checkState[key]=[];save('vna_checks',checkState);renderBriefing()};
+}
+function setTab(next,forceOpen=false){
+ if(tab==='simulator'&&next!=='simulator')stopSimulation();
+ tab=next;document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+ const titles={schedule:'Lịch bay của tôi',destinations:'Thông tin điểm đến',simulator:'Mô phỏng chuyến bay',documents:'Tài liệu chuyến bay',briefing:'Họp đầu chuyến'};
+ $('drawerKicker').textContent='VNA · FLIGHT BRIEFING';$('drawerTitle').textContent=titles[tab];
+ if(forceOpen)drawerOpen=true;$('drawer').classList.toggle('hidden',!drawerOpen);
+ if(tab==='schedule')renderCalendar();if(tab==='destinations')renderDestinations();if(tab==='simulator')renderSimulator();if(tab==='documents')renderDocuments();if(tab==='briefing')renderBriefing();
+}
+function initGlobe(){
+ if(typeof window.Globe!=='function'){$('mapHint').textContent='Không tải được bản đồ 3D. Vui lòng kiểm tra kết nối Internet.';return}
+ globe=window.Globe()(document.getElementById('globeViz')).globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg').backgroundColor('rgba(0,0,0,0)').showAtmosphere(true).atmosphereColor('#5d9ac5').atmosphereAltitude(.17)
+ .arcsData([]).arcStartLat('startLat').arcStartLng('startLng').arcEndLat('endLat').arcEndLng('endLng').arcColor(()=>['rgba(201,166,94,.12)','rgba(234,214,165,.98)']).arcAltitudeAutoScale(.25).arcStroke(.75).arcDashLength(.5).arcDashGap(.16).arcDashAnimateTime(2100)
+ .pointsData([]).labelsData([]);
+ globe.controls().autoRotate=false;globe.controls().autoRotateSpeed=0;globe.controls().enableDamping=true;globe.pointOfView({lat:19,lng:110,altitude:2.3},0);
+ const globeRoot=document.getElementById('globeViz');
+ if(!globeRoot.dataset.markerClickReady){
+  globeRoot.dataset.markerClickReady='1';
+  globeRoot.addEventListener('click',e=>{
+   const marker=e.target.closest?.('.map-sticker');
+   if(!marker)return;
+   const code=marker.dataset.airportCode;
+   if(code&&byCode[code]){e.preventDefault();e.stopPropagation();showAirport(code);}
+  },true);
+ }
+ const resize=()=>globe&&globe.width(innerWidth).height(innerHeight);addEventListener('resize',resize);
+}
+function init(){
+ initGlobe();updateMapRoute();setTab('schedule',true);
+ document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(tab===b.dataset.tab&&drawerOpen){drawerOpen=false;$('drawer').classList.add('hidden')}else setTab(b.dataset.tab,true)});
+ $('closeDrawer').onclick=()=>{drawerOpen=false;$('drawer').classList.add('hidden')};
+ $('homeBtn').onclick=()=>{if(globe)globe.pointOfView({lat:19,lng:110,altitude:2.3},900);$('mapHint').textContent='Chạm biểu tượng thành phố trên địa cầu để khám phá';};
+ $('zoomIn').onclick=()=>{if(globe){const p=globe.pointOfView();globe.pointOfView({...p,altitude:Math.max(.55,p.altitude*.78)},400)}};
+ $('zoomOut').onclick=()=>{if(globe){const p=globe.pointOfView();globe.pointOfView({...p,altitude:Math.min(5,p.altitude*1.25)},400)}};
+
+ $('fullBtn').onclick=async()=>{try{document.fullscreenElement?await document.exitFullscreen():await document.documentElement.requestFullscreen()}catch(e){toast('Trình duyệt không hỗ trợ toàn màn hình')}};
+ $('langBtn').onclick=()=>{lang=lang==='vi'?'en':'vi';$('langBtn').textContent=lang==='vi'?'VI / EN':'EN / VI';if(tab==='destinations')renderDestinations();toast(lang==='vi'?'Đã chuyển Tiếng Việt':'English selected')};
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+</body></html>
